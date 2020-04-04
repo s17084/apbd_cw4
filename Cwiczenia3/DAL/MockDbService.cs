@@ -14,9 +14,9 @@ namespace Cwiczenia3.DAL
         {
             _students = new List<Student>
             {
-                new Student{IdStudent=1, FirstName="Dariusz", LastName="Kulig" },
-                new Student{IdStudent=2, FirstName="Katarzyna", LastName="Rychlik" },
-                new Student{IdStudent=3, FirstName="Andrzej", LastName="Wawrzeńczyk" },
+                //new Student{IdStudent=1, FirstName="Dariusz", LastName="Kulig" },
+                //new Student{IdStudent=2, FirstName="Katarzyna", LastName="Rychlik" },
+                //new Student{IdStudent=3, FirstName="Andrzej", LastName="Wawrzeńczyk" },
             };
         }
 

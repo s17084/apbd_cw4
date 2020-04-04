@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Data.SqlClient;
 using Cwiczenia3.DAL;
 using Cwiczenia3.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -17,29 +19,91 @@ namespace Cwiczenia3.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetStudent(string orderBy)
+        public IActionResult GetStudent()
         {
-            return Ok(_dbService.GetStudents());
+            using(var connection = new SqlConnection("Data Source=db-mssql;Initial Catalog=s17084;Integrated Security=True"))
+            using(var command = new SqlCommand())
+            {
+                List<Student> _students = new List<Student>();
+                
+                command.Connection = connection;
+                command.CommandText = 
+                    "SELECT s.FirstName, s.LastName, s.BirthDate, ss.Name, e.Semester " +
+                    " FROM Student s " +
+                    " JOIN Enrollment e ON e.IdEnrollment = s.IdEnrollment " +
+                    " JOIN Studies ss ON ss.IdStudy = e.IdStudy ";
+
+                connection.Open();
+                var executeReader = command.ExecuteReader();
+                while(executeReader.Read())
+                {
+                    var student = new Student();
+                    student.FirstName = executeReader["FirstName"].ToString();
+                    student.LastName = executeReader["LastName"].ToString();
+                    student.BirthDate = DateTime.Parse(executeReader["BirthDate"].ToString());
+                    student.StudyName = executeReader["Name"].ToString();
+                    student.Semester = int.Parse(executeReader["Semester"].ToString());
+                    _students.Add(student);
+                }
+
+                return Ok(_students);
+            }
         }
 
-        [HttpGet("{id}")]
-        public IActionResult GetStudent(int id)
+        [HttpGet("{indexNumber}")]
+        public IActionResult GetStudent(string indexNumber)
         {
-            if(id ==1)
+            using (var connection = new SqlConnection("Data Source=db-mssql;Initial Catalog=s17084;Integrated Security=True"))
+            using (var command = new SqlCommand())
             {
-                return Ok("Kulig");
-            }else if (id == 2)
-            {
-                return Ok("Rychlik");
-            }
+                List<Enrollment> _enrollments = new List<Enrollment>();
 
-            return NotFound("Nie znaleziono studenta");
+                //command.Connection = connection;
+                //command.CommandText =
+                //    "SELECT e.* FROM Student s " +
+                //    " JOIN Enrollment e ON e.IdEnrollment = s.IdEnrollment " +
+                //    " WHERE s.IndexNumber = '" + indexNumber + "'";
+
+                // UWAGA!!! Przy powyższym rozwiązaniu, wywołanie:
+                // api/students/';%20DROP%20TABLE%20Student%20--
+                // spowoduje usunięcie tabeli "Students"!!!
+                // 
+                // Lepsze rozwiązanie z wykorzystaniem parametrów:
+
+                command.Connection = connection;
+                command.CommandText =
+                    "SELECT e.* FROM Student s " +
+                    " JOIN Enrollment e ON e.IdEnrollment = s.IdEnrollment " +
+                    " WHERE s.IndexNumber = @indexNumber ";
+                command.Parameters.AddWithValue("indexNumber", indexNumber);
+
+                connection.Open();
+                var executeReader = command.ExecuteReader();
+                while (executeReader.Read())
+                {
+                    var enrollment = new Enrollment();
+                    enrollment.IdEnrollment = int.Parse(executeReader["IdEnrollment"].ToString());
+                    enrollment.Semester = int.Parse(executeReader["Semester"].ToString());
+                    enrollment.IdStudy = int.Parse(executeReader["IdStudy"].ToString());
+                    enrollment.StartDate = DateTime.Parse(executeReader["StartDate"].ToString());
+                    _enrollments.Add(enrollment);
+                }
+                if (_enrollments.Count > 0)
+                {
+                    return Ok(_enrollments);
+                }
+                else
+                {
+                    return NotFound("Nie znaleziono studenta");
+                }
+            }
+            
         }
 
         [HttpPost]
         public IActionResult CreateStudent(Student student)
         {
-            student.IndexNumber = $"s{new Random().Next(1, 20000)}";
+            //student.IndexNumber = $"s{new Random().Next(1, 20000)}";
             return Ok(student);
         }
 
